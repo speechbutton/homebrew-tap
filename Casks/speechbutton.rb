@@ -5,7 +5,7 @@ cask "speechbutton" do
   url "https://github.com/speechbutton/speechbutton-dist/releases/latest/download/SpeechButton-release.dmg"
   name "SpeechButton"
   desc "Voice-to-text for macOS. Hold a hotkey, speak, release — text appears instantly."
-  homepage "https://speechbutton.app"
+  homepage "https://speechbutton.com"
 
   depends_on macos: ">= :sonoma"
 
