@@ -1,21 +1,21 @@
 cask "speechbutton" do
-  version :latest
-  sha256 :no_check
+  version "2.14.0"
+  sha256 "fc17994d21f65807fae10fadaefcd4f4a6496ebd590a71891d0a9502313c232d"
 
-  url "https://github.com/speechbutton/speechbutton-dist/releases/latest/download/SpeechButton-release.dmg"
+  url "https://github.com/speechbutton/speechbutton-dist/releases/download/v#{version}/SpeechButton-release.dmg",
+      verified: "github.com/speechbutton/speechbutton-dist/"
   name "SpeechButton"
   desc "Voice-to-text for macOS. Hold a hotkey, speak, release — text appears instantly."
   homepage "https://speechbutton.com"
 
-  depends_on macos: ">= :sonoma"
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  depends_on macos: :sonoma
 
   app "SpeechButton.app"
-
-  livecheck do
-    url "https://github.com/speechbutton/speechbutton-dist/releases/latest"
-    strategy :header_match
-    regex(%r{releases/tag/v?(\d+(?:\.\d+)+)}i)
-  end
 
   zap trash: [
     "~/Library/Application Support/SpeechButton",

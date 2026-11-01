@@ -1,0 +1,57 @@
+name: Bump cask on new release
+
+# Keeps Casks/speechbutton.rb in step with the newest speechbutton-dist release.
+# Self-contained on purpose: it reads the other repo through the public API, so it
+# needs no cross-repo token — only this repo's GITHUB_TOKEN to commit.
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve latest release and current cask version
+        id: v
+        run: |
+          set -euo pipefail
+          latest=$(curl -fsSL https://api.github.com/repos/speechbutton/speechbutton-dist/releases/latest | jq -r .tag_name)
+          latest=${latest#v}
+          current=$(grep -oE '^  version "[^"]+"' Casks/speechbutton.rb | sed 's/.*"\(.*\)"/\1/')
+          echo "latest=$latest"   >> "$GITHUB_OUTPUT"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "Latest release: $latest | cask: $current"
+
+      - name: Download the DMG and compute its checksum
+        if: steps.v.outputs.latest != steps.v.outputs.current
+        id: sum
+        run: |
+          set -euo pipefail
+          url="https://github.com/speechbutton/speechbutton-dist/releases/download/v${{ steps.v.outputs.latest }}/SpeechButton-release.dmg"
+          curl -fsSL -o dmg "$url"
+          echo "sha256=$(sha256sum dmg | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Rewrite the cask
+        if: steps.v.outputs.latest != steps.v.outputs.current
+        run: |
+          set -euo pipefail
+          sed -i -E \
+            -e 's|^  version ".*"|  version "${{ steps.v.outputs.latest }}"|' \
+            -e 's|^  sha256 ".*"|  sha256 "${{ steps.sum.outputs.sha256 }}"|' \
+            Casks/speechbutton.rb
+          grep -E '^  (version|sha256) ' Casks/speechbutton.rb
+
+      - name: Commit
+        if: steps.v.outputs.latest != steps.v.outputs.current
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "speechbutton ${{ steps.v.outputs.latest }}"
+          git push
